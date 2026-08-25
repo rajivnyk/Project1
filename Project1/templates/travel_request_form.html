@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}New Travel Request{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="page-header">
+      <h2><i class="fa-solid fa-plane-departure me-2 text-primary"></i>New Travel Request</h2>
+    </div>
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <form method="post" action="{{ url_for('travel.new_request') }}" novalidate>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Purpose <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" name="purpose" required placeholder="e.g. Quarterly Sales Meeting">
+          </div>
+          
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Destination City <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="destination_city" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Destination Country</label>
+              <select class="form-select" id="countrySelect" onchange="toggleOtherCountry()">
+                <option value="India" selected>India</option>
+                <option value="United States">United States</option>
+                <option value="United Kingdom">United Kingdom</option>
+                <option value="Canada">Canada</option>
+                <option value="Australia">Australia</option>
+                <option value="Germany">Germany</option>
+                <option value="France">France</option>
+                <option value="Japan">Japan</option>
+                <option value="Singapore">Singapore</option>
+                <option value="United Arab Emirates">United Arab Emirates</option>
+                <option value="Other">Other...</option>
+              </select>
+              <input type="text" class="form-control mt-2" id="otherCountryInput" placeholder="Type country name..." style="display: none;">
+              <input type="hidden" name="destination_country" id="finalCountry" value="India">
+              <script>
+                function toggleOtherCountry() {
+                  const select = document.getElementById('countrySelect');
+                  const input = document.getElementById('otherCountryInput');
+                  const finalInput = document.getElementById('finalCountry');
+                  
+                  if (select.value === 'Other') {
+                    input.style.display = 'block';
+                    input.required = true;
+                    finalInput.value = input.value;
+                  } else {
+                    input.style.display = 'none';
+                    input.required = false;
+                    finalInput.value = select.value;
+                  }
+                }
+
+                // Attach event listener to input to update hidden field
+                document.getElementById('otherCountryInput').addEventListener('input', function() {
+                  document.getElementById('finalCountry').value = this.value;
+                });
+              </script>
+            </div>
+          </div>
+          
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">From Date <span class="text-danger">*</span></label>
+              <input type="date" class="form-control" name="from_date" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">To Date <span class="text-danger">*</span></label>
+              <input type="date" class="form-control" name="to_date" required>
+            </div>
+          </div>
+          
+          <div class="row mb-4">
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Mode of Travel</label>
+              <select class="form-select" name="mode_of_travel">
+                <option value="FLIGHT">Flight</option>
+                <option value="TRAIN">Train</option>
+                <option value="BUS">Bus</option>
+                <option value="CAB">Cab/Taxi</option>
+                <option value="PERSONAL_VEHICLE">Personal Vehicle</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Estimated Cost (&#8377;) <span class="text-danger">*</span></label>
+              <input type="number" step="0.01" class="form-control" name="estimated_cost" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Advance Required (&#8377;)</label>
+              <input type="number" step="0.01" class="form-control" name="advance_required">
+            </div>
+          </div>
+          
+          <div class="d-flex gap-3">
+            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-paper-plane me-2"></i>Submit Request</button>
+            <a href="{{ url_for('travel.my_requests') }}" class="btn btn-outline-secondary">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

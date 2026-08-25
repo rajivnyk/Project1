@@ -1,11 +1,39 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
+{% block title %}Welcome{% endblock %}
 {% block content %}
-<div class="card">
-    <h2>Welcome, {{ current_user.username }}!</h2>
-    <p style="margin-top:10px;color:#555;">
-        You are logged in as <strong>{{ current_user.role }}</strong>.
-        More features will be available in the next phases.
-    </p>
-    <a class="btn secondary" href="{{ url_for('auth.logout') }}" style="margin-top:20px;display:inline-block;">Logout</a>
+<div class="row justify-content-center mt-4 auth-hero">
+  <div class="col-lg-6">
+    <div class="card portal-card {{ 'manager' if role == 'MANAGER' else 'finance' if role == 'FINANCE' else 'employee' }} shadow-sm">
+      <div class="card-body p-4 text-center">
+        <div class="display-4 mb-2 {{ 'text-success' if role == 'MANAGER' else 'text-purple' if role == 'FINANCE' else 'text-primary' }}" style="{{ 'color:#6f42c1' if role == 'FINANCE' else '' }}">
+          {% if role == 'MANAGER' %}<i class="fa-solid fa-user-tie"></i>
+          {% elif role == 'FINANCE' %}<i class="fa-solid fa-coins"></i>
+          {% elif role == 'ADMIN' %}<i class="fa-solid fa-shield-halved"></i>
+          {% else %}<i class="fa-solid fa-user"></i>{% endif %}
+        </div>
+        <h3 class="fw-bold mb-1">Welcome, {{ username }}!</h3>
+        <p class="text-muted mb-3">Signed in as <span class="badge role-badge-{{ role|lower }}">{{ role }}</span></p>
+
+        <div class="d-grid gap-2 col-8 mx-auto">
+          {% if role in ('EMPLOYEE', 'MANAGER') %}
+          <a class="btn btn-primary" href="{{ url_for('employee.dashboard') }}"><i class="fa-solid fa-gauge me-2"></i>Go to My Dashboard</a>
+          {% endif %}
+          {% if role == 'MANAGER' %}
+          <a class="btn btn-success" href="{{ url_for('manager.dashboard') }}"><i class="fa-solid fa-users-gear me-2"></i>Manager Approvals</a>
+          {% endif %}
+          {% if role == 'FINANCE' %}
+          <a class="btn btn-primary" href="{{ url_for('finance.dashboard') }}"><i class="fa-solid fa-coins me-2"></i>Finance Dashboard</a>
+          {% endif %}
+          {% if role == 'ADMIN' %}
+          <a class="btn btn-danger" href="{{ url_for('admin.users') }}"><i class="fa-solid fa-shield-halved me-2"></i>Admin Console</a>
+          {% endif %}
+          {% if role in ('MANAGER', 'ADMIN') %}
+          <a class="btn btn-outline-success" href="{{ url_for('auth.manager_register') }}"><i class="fa-solid fa-user-plus me-2"></i>Add New Employee</a>
+          {% endif %}
+          <a class="btn btn-outline-secondary" href="{{ url_for('auth.logout') }}"><i class="fa-solid fa-right-from-bracket me-2"></i>Logout</a>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}

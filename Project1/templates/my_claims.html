@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}My Claims{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <h2><i class="fa-solid fa-list-check me-2 text-primary"></i>My Claims</h2>
+  <a href="{{ url_for('expense.new_claim') }}" class="btn btn-primary"><i class="fa-solid fa-plus me-2"></i>New Claim</a>
+</div>
+<!-- Status filter pills -->
+<div class="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div class="d-flex gap-2 flex-wrap">
+    <a href="{{ url_for('expense.my_claims') }}" class="btn btn-sm {% if not request.args.get('status') %}btn-primary{% else %}btn-outline-secondary{% endif %}">All</a>
+    {% for s in ['DRAFT','SUBMITTED','MANAGER_APPROVED','MANAGER_REJECTED','FINANCE_VERIFIED','REIMBURSED','CANCELLED'] %}
+    <a href="{{ url_for('expense.my_claims', status=s) }}" class="btn btn-sm {% if request.args.get('status')==s %}btn-primary{% else %}btn-outline-secondary{% endif %}">{{ s.replace('_',' ') }}</a>
+    {% endfor %}
+  </div>
+  <div class="input-group input-group-sm" style="max-width:220px">
+    <span class="input-group-text"><i class="fa-solid fa-magnifying-glass"></i></span>
+    <input type="text" class="form-control" placeholder="Filter claims..." data-table-filter="claimsTable">
+  </div>
+</div>
+<div class="card shadow-sm">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0" id="claimsTable">
+        <thead class="table-light">
+          <tr><th>Claim No</th><th>Title</th><th>Date</th><th class="text-end">Amount</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          {% for c in claims %}
+          <tr>
+            <td><a href="{{ url_for('expense.detail', claim_id=c.id) }}" class="text-decoration-none fw-semibold">{{ c.claim_no }}</a></td>
+            <td class="text-truncate" style="max-width:200px">{{ c.title }}</td>
+            <td class="small text-muted">{{ c.claim_date }}</td>
+            <td class="text-end fw-semibold">&#8377;{{ "%.2f"|format(c.total_amount or 0) }}</td>
+            <td><span class="badge badge-{{ c.status }}">{{ c.status.replace('_',' ') }}</span></td>
+            <td>
+              <div class="d-flex gap-1">
+                {% if c.status == 'DRAFT' %}
+                <a href="{{ url_for('expense.edit_claim', claim_id=c.id) }}" class="btn btn-sm btn-outline-primary" title="Edit"><i class="fa-solid fa-pencil"></i></a>
+                <form method="post" action="{{ url_for('expense.submit', claim_id=c.id) }}" onsubmit="return confirm('Submit this claim?')">
+                  <button class="btn btn-sm btn-warning" title="Submit"><i class="fa-solid fa-paper-plane"></i></button>
+                </form>
+                <form method="post" action="{{ url_for('expense.cancel', claim_id=c.id) }}" onsubmit="return confirm('Cancel this claim?')">
+                  <input type="hidden" name="reason" value="Cancelled by employee">
+                  <button class="btn btn-sm btn-outline-danger" title="Cancel"><i class="fa-solid fa-ban"></i></button>
+                </form>
+                {% else %}
+                <a href="{{ url_for('expense.detail', claim_id=c.id) }}" class="btn btn-sm btn-outline-secondary" title="View"><i class="fa-solid fa-eye"></i></a>
+                {% if c.status == 'SUBMITTED' %}
+                <form method="post" action="{{ url_for('expense.cancel', claim_id=c.id) }}" onsubmit="return confirm('Cancel this claim before your manager decides on it?')">
+                  <input type="hidden" name="reason" value="Cancelled by employee before manager decision">
+                  <button class="btn btn-sm btn-outline-danger" title="Cancel"><i class="fa-solid fa-ban"></i></button>
+                </form>
+                {% endif %}
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" class="text-center text-muted py-5">
+            <i class="fa-solid fa-inbox fs-3 d-block mb-2"></i>No claims found
+          </td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

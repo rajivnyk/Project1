@@ -1,65 +1,93 @@
 ﻿import os
 import logging
 from logging.handlers import RotatingFileHandler
-from flask import Flask, render_template, redirect, url_for, g
+from flask import Flask, g, render_template, redirect, url_for
 from config.database import db, init_db
-import models  # noqa: F401 - registers all ORM models with SQLAlchemy
+import models
 from controller.auth_controller import auth_bp
+from controller.employee_controller import employee_bp
+from controller.travel_controller import travel_bp
+from controller.expense_controller import expense_bp
+from controller.manager_controller import manager_bp
+from controller.finance_controller import finance_bp
+from controller.admin_controller import admin_bp
+from controller.report_controller import report_bp
+from controller.analytics_controller import analytics_bp, api_bp as analytics_api_bp
+
+app = Flask(__name__)
+init_db(app)
+os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+os.makedirs("logs", exist_ok=True)
+handler = RotatingFileHandler(
+    "logs/app.log", maxBytes=1_000_000, backupCount=5, encoding="utf-8"
+)
+handler.setFormatter(
+    logging.Formatter("%(asctime)s %(levelname)-8s [%(module)s:%(lineno)d] %(message)s")
+)
+app.logger.addHandler(handler)
+app.logger.setLevel(logging.DEBUG if os.getenv("FLASK_DEBUG") == "1" else logging.INFO)
+for bp in (
+    auth_bp,
+    employee_bp,
+    travel_bp,
+    expense_bp,
+    manager_bp,
+    finance_bp,
+    admin_bp,
+    report_bp,
+    analytics_bp,
+    analytics_api_bp,
+):
+    app.register_blueprint(bp)
 
 
-def create_app():
-    app = Flask(__name__)
+@app.context_processor
+def inject_user():
+    return {"current_user": g.get("user"), "current_employee": g.get("employee")}
 
-    # 1. Wire up DB config + secret keys from .env
-    init_db(app)
 
-    # 2. Register blueprints (Phase 1: auth only)
-    app.register_blueprint(auth_bp)
+@app.errorhandler(401)
+def unauthorized(e):
+    return render_template("error.html", code=401, message="Please log in."), 401
 
-    # 3. Logging
-    os.makedirs("logs", exist_ok=True)
-    handler = RotatingFileHandler("logs/app.log", maxBytes=1_000_000, backupCount=5, encoding="utf-8")
-    handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)-8s [%(module)s:%(lineno)d] %(message)s"))
-    app.logger.addHandler(handler)
-    app.logger.setLevel(logging.DEBUG)
 
-    # 4. Inject current_user into every template
-    @app.context_processor
-    def inject_user():
-        return {"current_user": g.get("user"), "current_employee": g.get("employee")}
+@app.errorhandler(403)
+def forbidden(e):
+    return (
+        render_template(
+            "error.html", code=403, message="You do not have permission to do that."
+        ),
+        403,
+    )
 
-    # 5. Error handlers
-    @app.errorhandler(401)
-    def unauthorized(e):
-        return render_template("error.html", code=401, message="Please log in."), 401
 
-    @app.errorhandler(403)
-    def forbidden(e):
-        return render_template("error.html", code=403, message="You do not have permission to do that."), 403
+@app.errorhandler(404)
+def not_found(e):
+    return render_template("error.html", code=404, message="Page not found."), 404
 
-    @app.errorhandler(404)
-    def not_found(e):
-        return render_template("error.html", code=404, message="Page not found."), 404
 
-    @app.errorhandler(500)
-    def server_error(e):
-        db.session.rollback()
-        app.logger.exception("Unhandled error")
-        return render_template("error.html", code=500, message="Something went wrong. It has been logged."), 500
+@app.errorhandler(500)
+def server_error(e):
+    db.session.rollback()
+    app.logger.exception("Unhandled error")
+    return (
+        render_template(
+            "error.html", code=500, message="Something went wrong. It has been logged."
+        ),
+        500,
+    )
 
-    # 6. Root redirect to login
-    @app.route("/")
-    def root():
-        return redirect(url_for("auth.login_page"))
 
-    # 7. Create DB tables
+@app.route("/")
+def root():
+    return redirect(url_for("auth.login_page"))
+
+
+from jinja2 import StrictUndefined
+
+app.jinja_env.undefined = StrictUndefined
+if __name__ == "__main__":
     with app.app_context():
         db.create_all()
-
-    return app
-
-
-app = create_app()
-
-if __name__ == "__main__":
-    app.run(debug=True, host="127.0.0.1", port=5000)
+        print("Tables:", ", ".join(sorted(db.metadata.tables)))
+    app.run(debug=os.getenv("FLASK_DEBUG") == "1", host="127.0.0.1", port=5000)

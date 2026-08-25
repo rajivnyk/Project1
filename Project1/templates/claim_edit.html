@@ -1,0 +1,206 @@
+﻿{% extends "base.html" %}
+{% block title %}Edit Claim - {{ claim.claim_no }}<script>
+document.querySelector('form[action*=\"receipt\"]').addEventListener('submit', function(e) {
+  const amt = document.querySelector('input[name=\"amount\"]').value;
+  const desc = document.querySelector('input[name=\"description\"]').value;
+  if(amt || desc) {
+    if(!confirm('You have unsaved text in the \"Add Expense Item\" box above. If you upload a receipt now, that text will be lost. Continue anyway?')) {
+      e.preventDefault();
+    }
+  }
+});
+</script>
+{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+  <h2><i class="fa-solid fa-pen-to-square me-2 text-primary"></i>Edit Claim: {{ claim.claim_no }}</h2>
+  <div>
+    {% if claim.status == 'DRAFT' %}
+    <form method="post" action="{{ url_for('expense.submit', claim_id=claim.id) }}" class="d-inline" onsubmit="return confirm('Submit this claim for approval? You will not be able to edit it after submission.')">
+      <button class="btn btn-warning fw-bold"><i class="fa-solid fa-paper-plane me-2"></i>Submit for Approval</button>
+    </form>
+    {% endif %}
+    <a href="{{ url_for('expense.my_claims') }}" class="btn btn-outline-secondary ms-2">Back</a>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white">
+        <h6 class="mb-0 fw-bold">Claim Details</h6>
+      </div>
+      <div class="card-body">
+        <h5 class="mb-3">{{ claim.title }}</h5>
+        <div class="mb-2"><small class="text-muted fw-semibold">Status:</small> <span class="badge badge-{{ claim.status }}">{{ claim.status }}</span></div>
+        <div class="mb-2"><small class="text-muted fw-semibold">Date:</small> {{ claim.claim_date }}</div>
+        <div class="mb-2"><small class="text-muted fw-semibold">Period:</small> {{ claim.period_from }} to {{ claim.period_to }}</div>
+        <div class="mb-2"><small class="text-muted fw-semibold">Total:</small> <span class="fw-bold fs-5 text-primary">&#8377;{{ "%.2f"|format(claim.total_amount or 0) }}</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white">
+        <h6 class="mb-0 fw-bold">Add Expense Item</h6>
+      </div>
+      <div class="card-body">
+        <form method="post" action="{{ url_for('expense.add_item', claim_id=claim.id) }}" novalidate>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold small">Date <span class="text-danger">*</span></label>
+              <input type="date" class="form-control form-control-sm" name="expense_date" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold small">Category <span class="text-danger">*</span></label>
+              <select class="form-select form-select-sm" name="category_id" required>
+                {% for c in categories %}
+                <option value="{{ c.id }}">{{ c.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-12">
+              <label class="form-label fw-semibold small">Description <span class="text-danger">*</span></label>
+              <input type="text" class="form-control form-control-sm" name="description" required placeholder="Details about this expense">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold small">Amount (&#8377;) <span class="text-danger">*</span></label>
+              <input type="number" step="0.01" class="form-control form-control-sm" name="amount" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold small">Vendor / Merchant</label>
+              <input type="text" class="form-control form-control-sm" name="vendor">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold small">City / Location</label>
+              <input type="text" class="form-control form-control-sm" name="city">
+            </div>
+            <div class="col-12 mt-3">
+              <button type="submit" class="btn btn-sm btn-primary"><i class="fa-solid fa-plus me-1"></i>Add Item</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mt-4">
+  <div class="col-lg-12">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white">
+        <h6 class="mb-0 fw-bold">Expense Items Added</h6>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Date</th>
+                <th>Category</th>
+                <th>Description</th>
+                <th>Vendor & City</th>
+                <th class="text-end">Amount</th>
+                <th>Violation</th>
+                <th class="text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in claim.items %}
+              <tr>
+                <td class="small">{{ item.expense_date }}</td>
+                <td class="small fw-semibold">{{ item.category.name }}</td>
+                <td>{{ item.description }}</td>
+                <td class="small text-muted">{{ item.vendor or '-' }}, {{ item.city or '-' }}</td>
+                <td class="text-end fw-semibold">&#8377;{{ "%.2f"|format(item.amount_in_base) }}</td>
+                <td>
+                  {% if item.policy_violation %}
+                  <span class="badge bg-danger" title="{{ item.violation_reason }}"><i class="fa-solid fa-triangle-exclamation"></i> Yes</span>
+                  {% else %}
+                  <span class="badge bg-success">No</span>
+                  {% endif %}
+                </td>
+                <td class="text-center">
+                  <form method="post" action="{{ url_for('expense.delete_item', claim_id=claim.id, item_id=item.id) }}" onsubmit="return confirm('Remove this item?')" class="d-inline">
+                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove Item"><i class="fa-solid fa-trash"></i></button>
+                  </form>
+                </td>
+              </tr>
+              {% else %}
+              <tr><td colspan="7" class="text-center text-muted py-4">No items added yet.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mt-1">
+  <div class="col-lg-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white">
+        <h6 class="mb-0 fw-bold"><i class="fa-solid fa-file-arrow-up me-2"></i>Upload Receipt</h6>
+      </div>
+      <div class="card-body">
+        <form method="post" action="{{ url_for('expense.upload_receipt', claim_id=claim.id) }}" enctype="multipart/form-data">
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">Select File (PDF, JPG, PNG)</label>
+            <input type="file" class="form-control" name="receipt" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">Link to Item (Optional)</label>
+            <select class="form-select form-select-sm" name="item_id">
+              <option value="">-- General Claim Receipt --</option>
+              {% for item in claim.items %}
+                <option value="{{ item.id }}">{{ item.expense_date }} - {{ item.category.name }} (&#8377;{{ item.amount_in_base }})</option>
+              {% endfor %}
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-upload me-2"></i>Upload</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white">
+        <h6 class="mb-0 fw-bold"><i class="fa-solid fa-paperclip me-2"></i>Attached Receipts</h6>
+      </div>
+      <div class="card-body p-0">
+        <ul class="list-group list-group-flush">
+          {% for r in claim.receipts %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+              <a href="{{ url_for('expense.download_receipt', receipt_id=r.id) }}" target="_blank" class="fw-semibold text-decoration-none">
+                <i class="fa-solid fa-file-pdf text-danger me-1"></i> {{ r.original_filename }}
+              </a>
+              <div class="small text-muted">
+                {% if r.item %} Linked to: {{ r.item.category.name }} {% else %} General Receipt {% endif %}
+              </div>
+            </div>
+            <span class="badge bg-secondary rounded-pill">{{ (r.file_size / 1024)|round(1) }} KB</span>
+          </li>
+          {% else %}
+          <li class="list-group-item text-center text-muted py-4">No receipts attached.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+document.querySelector('form[action*=\"receipt\"]').addEventListener('submit', function(e) {
+  const amt = document.querySelector('input[name=\"amount\"]').value;
+  const desc = document.querySelector('input[name=\"description\"]').value;
+  if(amt || desc) {
+    if(!confirm('You have unsaved text in the \"Add Expense Item\" box above. If you upload a receipt now, that text will be lost. Continue anyway?')) {
+      e.preventDefault();
+    }
+  }
+});
+</script>
+{% endblock %}

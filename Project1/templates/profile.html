@@ -1,0 +1,96 @@
+﻿{% extends "base.html" %}
+{% block title %}My Profile{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="page-header d-flex justify-content-between align-items-center">
+      <h2><i class="fa-solid fa-id-badge me-2 text-primary"></i>My Profile</h2>
+    </div>
+    
+    <div class="card shadow-sm mb-4">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-bold">Account Details</h6>
+        <a href="{{ url_for('auth.change_password') }}" class="btn btn-sm btn-outline-primary"><i class="fa-solid fa-key me-1"></i>Change Password</a>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-sm-3 text-muted fw-semibold small mb-2">Username</div>
+          <div class="col-sm-9 mb-2">{{ current_user.username }}</div>
+          
+          <div class="col-sm-3 text-muted fw-semibold small mb-2">Email</div>
+          <div class="col-sm-9 mb-2">{{ current_user.email }}</div>
+          
+          <div class="col-sm-3 text-muted fw-semibold small mb-2">Role</div>
+          <div class="col-sm-9 mb-2"><span class="badge role-badge-{{ current_user.role|lower }}">{{ current_user.role }}</span></div>
+        </div>
+      </div>
+    </div>
+    
+    {% if current_employee %}
+    <div class="card shadow-sm">
+      <div class="card-header bg-white">
+        <h6 class="mb-0 fw-bold">Employment & Banking Details</h6>
+      </div>
+      <div class="card-body">
+        <form method="post" action="{{ url_for('employee.profile') }}">
+          <div class="row">
+            <!-- Non-editable info -->
+            <div class="col-sm-3 text-muted fw-semibold small mb-3">Emp Code</div>
+            <div class="col-sm-9 mb-3 fw-semibold">{{ current_employee.emp_code }}</div>
+            
+            <div class="col-sm-3 text-muted fw-semibold small mb-3">Department</div>
+            <div class="col-sm-9 mb-3">{{ current_employee.department }}</div>
+            
+            <div class="col-sm-3 text-muted fw-semibold small mb-3">Grade</div>
+            <div class="col-sm-9 mb-3"><span class="badge bg-secondary">{{ current_employee.grade }}</span></div>
+            
+            <div class="col-sm-3 text-muted fw-semibold small mb-3">Manager</div>
+            <div class="col-sm-9 mb-3">
+              {% if current_employee.manager %}
+                {{ current_employee.manager.full_name }}
+              {% else %}
+                <span class="text-muted">None (Top-Level)</span>
+              {% endif %}
+            </div>
+
+            <!-- Editable Fields -->
+            <div class="col-12"><hr></div>
+            
+            <div class="col-sm-6 mb-3">
+              <label class="form-label fw-semibold text-muted small">Full Name <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="full_name" value="{{ current_employee.full_name }}" required>
+            </div>
+            
+            <div class="col-sm-6 mb-3">
+              <label class="form-label fw-semibold text-muted small">Designation</label>
+              <input type="text" class="form-control" name="designation" value="{{ current_employee.designation or '' }}">
+            </div>
+
+            <div class="col-sm-6 mb-3">
+              <label class="form-label fw-semibold text-muted small">Contact Number</label>
+              <input type="text" class="form-control" name="contact_number" value="{{ current_employee.contact_number or '' }}">
+            </div>
+            
+            <div class="col-12"><h6 class="mt-2 mb-3 fw-bold text-success"><i class="fa-solid fa-building-columns me-2"></i>Banking Information</h6></div>
+            
+            <div class="col-sm-6 mb-3">
+              <label class="form-label fw-semibold text-muted small">Bank Account Number <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="bank_account_no" value="{{ current_employee.bank_account_no or '' }}" required>
+            </div>
+            
+            <div class="col-sm-6 mb-3">
+              <label class="form-label fw-semibold text-muted small">IFSC Code <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="ifsc_code" value="{{ current_employee.ifsc_code or '' }}" required>
+            </div>
+          </div>
+          
+          <div class="d-flex justify-content-end mt-3">
+            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk me-1"></i>Save Profile Details</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

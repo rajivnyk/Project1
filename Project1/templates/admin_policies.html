@@ -1,0 +1,38 @@
+﻿{% extends "base.html" %}
+{% block title %}Admin - Policies{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+  <h2><i class="fa-solid fa-scroll me-2 text-danger"></i>Expense Policies</h2>
+</div>
+<div class="card shadow-sm">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr><th>Category</th><th>Grade</th><th class="text-end">Max / Day</th><th class="text-end">Max / Claim</th><th class="text-end">Receipt Req. Above</th><th>Prior Approval</th></tr>
+        </thead>
+        <tbody>
+          {% for p in policies %}
+          <tr>
+            <td class="fw-semibold">{{ p.category.name }}</td>
+            <td><span class="badge bg-secondary">{{ p.grade }}</span></td>
+            <td class="text-end">&#8377;{{ "%.2f"|format(p.max_amount_per_day) }}</td>
+            <td class="text-end">&#8377;{{ "%.2f"|format(p.max_amount_per_claim) }}</td>
+            <td class="text-end">&#8377;{{ "%.2f"|format(p.receipt_required_above or 0) }}</td>
+            <td>
+              {% if p.requires_prior_approval %}
+                <span class="badge bg-warning text-dark">Yes</span>
+              {% else %}
+                <span class="text-muted small">No</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" class="text-center text-muted py-4">No policies defined.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

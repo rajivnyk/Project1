@@ -1,8 +1,17 @@
 ﻿{% extends "base.html" %}
+{% block title %}Error {{ code }}{% endblock %}
 {% block content %}
-<div class="card narrow" style="text-align:center;">
-    <h2 style="color:#e53935;">Error {{ code }}</h2>
-    <p style="margin-top:12px;color:#555;">{{ message }}</p>
-    <a class="btn secondary" href="{{ url_for('root') }}" style="margin-top:20px;display:inline-block;">Go Home</a>
+<div class="row justify-content-center mt-5">
+  <div class="col-md-6 text-center">
+    <div class="display-1 fw-bold text-danger mb-3">
+      {% if code == 404 %}<i class="fa-solid fa-magnifying-glass"></i>
+      {% elif code == 403 %}<i class="fa-solid fa-ban"></i>
+      {% elif code == 401 %}<i class="fa-solid fa-lock"></i>
+      {% else %}<i class="fa-solid fa-triangle-exclamation"></i>{% endif %}
+    </div>
+    <h1 class="display-3 fw-bold text-muted">{{ code }}</h1>
+    <h4 class="mb-3">{{ message }}</h4>
+    <a href="{{ url_for('root') }}" class="btn btn-primary"><i class="fa-solid fa-house me-2"></i>Go Home</a>
+  </div>
 </div>
 {% endblock %}

@@ -1,86 +1,158 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Expense & Travel Portal</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: Arial, sans-serif; background: #f0f2f5; color: #333; min-height: 100vh; }
-
-        /* Navbar */
-        nav { background: #1a73e8; padding: 0 24px; display: flex; align-items: center;
-              justify-content: space-between; height: 56px; }
-        nav .brand { color: #fff; font-size: 1.15rem; font-weight: bold; text-decoration: none; }
-        nav .nav-links a { color: #fff; text-decoration: none; margin-left: 16px; font-size: 0.9rem; }
-        nav .nav-links a:hover { text-decoration: underline; }
-
-        /* Flash messages */
-        .flashes { padding: 10px 24px; }
-        .flash { padding: 10px 14px; border-radius: 4px; margin-bottom: 8px; font-size: 0.9rem; }
-        .flash.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .flash.danger  { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        .flash.info    { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
-        .flash.warning { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
-
-        /* Main container */
-        .container { max-width: 900px; margin: 32px auto; padding: 0 16px; }
-
-        /* Card */
-        .card { background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.1);
-                padding: 32px; margin-bottom: 24px; }
-        .card.narrow { max-width: 420px; margin: 60px auto; }
-        .card h2 { margin-bottom: 20px; font-size: 1.4rem; color: #1a73e8; }
-
-        /* Form elements */
-        label { display: block; font-size: 0.85rem; font-weight: bold; margin: 12px 0 4px; color: #555; }
-        input[type=text], input[type=email], input[type=password], select {
-            width: 100%; padding: 9px 12px; border: 1px solid #ccc; border-radius: 4px;
-            font-size: 0.95rem; transition: border-color .2s; }
-        input:focus, select:focus { outline: none; border-color: #1a73e8; }
-
-        /* Buttons */
-        .btn { display: inline-block; padding: 9px 20px; border: none; border-radius: 4px;
-               font-size: 0.95rem; cursor: pointer; text-decoration: none; margin-top: 16px; }
-        .btn.primary { background: #1a73e8; color: #fff; width: 100%; text-align: center; }
-        .btn.primary:hover { background: #1558b0; }
-        .btn.secondary { background: #e8eaf6; color: #333; }
-        .btn.secondary:hover { background: #c5cae9; }
-
-        /* Utility */
-        .muted { color: #777; font-size: 0.88rem; margin-top: 14px; text-align: center; }
-        .muted a { color: #1a73e8; }
-        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Expense & Travel Portal{% endblock %}</title>
+  <script>
+    // Set the theme before first paint so there's no flash of the wrong theme.
+    (function () {
+      var saved = null; try { saved = localStorage.getItem("portal-theme"); } catch(e) {} saved = saved ||
+        (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      document.documentElement.setAttribute("data-theme", saved);
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body>
+<body class="bg-light">
 
-<nav>
-    <a class="brand" href="{{ url_for('root') }}">🧾 Travel & Expense Portal</a>
-    <div class="nav-links">
-        {% if current_user %}
-            <span style="color:#cce0ff">{{ current_user.username }} ({{ current_user.role }})</span>
-            <a href="{{ url_for('auth.logout') }}">Logout</a>
-        {% else %}
-            <a href="{{ url_for('auth.login_page') }}">Login</a>
-            <a href="{{ url_for('auth.register') }}">Register</a>
-        {% endif %}
+<!-- NAVBAR -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+  <div class="container-fluid">
+    <span class="navbar-brand fw-bold">
+      <i class="fa-solid fa-plane-up me-2 text-warning"></i>
+    </span>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navMain">
+      {% if current_user %}
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          {% if current_user.role in ['EMPLOYEE','MANAGER'] %}
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('employee.dashboard') }}">
+                <i class="fa-solid fa-gauge me-1"></i>Dashboard
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('travel.new_request') }}">
+                <i class="fa-solid fa-plane me-1"></i>New Trip
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('expense.new_claim') }}">
+                <i class="fa-solid fa-file-invoice me-1"></i>New Claim
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('expense.my_claims') }}">
+                <i class="fa-solid fa-list-check me-1"></i>My Claims
+              </a>
+            </li>
+          {% endif %}
+          {% if current_user.role == 'MANAGER' %}
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('manager.dashboard') }}">
+                <i class="fa-solid fa-users-gear me-1"></i>Approvals
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('auth.manager_register') }}">
+                <i class="fa-solid fa-user-plus me-1"></i>Add Employee
+              </a>
+            </li>
+          {% endif %}
+          {% if current_user.role == 'FINANCE' %}
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('finance.dashboard') }}">
+                <i class="fa-solid fa-coins me-1"></i>Finance
+              </a>
+            </li>
+          {% endif %}
+          {% if current_user.role == 'ADMIN' %}
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                <i class="fa-solid fa-shield-halved me-1"></i>Admin
+              </a>
+              <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="{{ url_for('admin.users') }}"><i class="fa-solid fa-users me-2"></i>Users</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('admin.policies') }}"><i class="fa-solid fa-scroll me-2"></i>Policies</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="{{ url_for('manager.dashboard') }}"><i class="fa-solid fa-users-gear me-2"></i>Approvals (as manager)</a></li>
+              </ul>
+            </li>
+          {% endif %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('analytics.dashboard') }}">
+              <i class="fa-solid fa-chart-line me-1"></i>Analytics
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('report.index') }}">
+              <i class="fa-solid fa-chart-bar me-1"></i>Reports
+            </a>
+          </li>
+        </ul>
+        <ul class="navbar-nav ms-auto align-items-lg-center gap-2">
+          <li class="nav-item">
+            <button type="button" id="themeToggleBtn" class="theme-toggle-btn" title="Toggle dark mode">
+              <i id="themeToggleIcon" class="fa-solid fa-moon"></i>
+            </button>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" data-bs-toggle="dropdown">
+              <span class="avatar-circle">{{ current_user.username[0]|upper }}</span>
+              <span class="d-none d-lg-inline">{{ current_user.username }}</span>
+              <span class="badge role-badge-{{ current_user.role|lower }}">{{ current_user.role }}</span>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="{{ url_for('employee.profile') }}"><i class="fa-solid fa-user me-2"></i>Profile</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}"><i class="fa-solid fa-right-from-bracket me-2"></i>Logout</a></li>
+            </ul>
+          </li>
+        </ul>
+      {% else %}
+        <ul class="navbar-nav ms-auto align-items-lg-center gap-2">
+          <li class="nav-item">
+            <button type="button" id="themeToggleBtn" class="theme-toggle-btn" title="Toggle dark mode">
+              <i id="themeToggleIcon" class="fa-solid fa-moon"></i>
+            </button>
+          </li>
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.login', portal='user') }}"><i class="fa-solid fa-user me-1"></i>Employee</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.login', portal='manager') }}"><i class="fa-solid fa-user-tie me-1"></i>Manager</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.login', portal='finance') }}"><i class="fa-solid fa-coins me-1"></i>Finance</a></li>
+        </ul>
+      {% endif %}
     </div>
+  </div>
 </nav>
 
-{% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        <div class="flashes">
-            {% for category, message in messages %}
-                <div class="flash {{ category }}">{{ message }}</div>
-            {% endfor %}
-        </div>
-    {% endif %}
-{% endwith %}
-
-<div class="container">
-    {% block content %}{% endblock %}
+<!-- FLASH MESSAGES -->
+<div class="container-fluid px-4 pt-3">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ 'danger' if category == 'danger' else category }} alert-dismissible fade show" role="alert">
+        <i class="fa-solid fa-{% if category == 'success' %}circle-check{% elif category == 'danger' %}circle-exclamation{% elif category == 'warning' %}triangle-exclamation{% else %}circle-info{% endif %} me-2"></i>
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endwith %}
 </div>
 
+<!-- MAIN CONTENT -->
+<main class="container-fluid px-4 pb-5">
+  {% block content %}{% endblock %}
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% block scripts %}{% endblock %}
 </body>
 </html>

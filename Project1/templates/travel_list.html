@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}My Travel Requests{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+  <h2><i class="fa-solid fa-plane me-2 text-primary"></i>My Travel Requests</h2>
+  <a href="{{ url_for('travel.new_request') }}" class="btn btn-primary"><i class="fa-solid fa-plus me-2"></i>New Request</a>
+</div>
+<div class="card shadow-sm">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr><th>Request No</th><th>Purpose</th><th>Destination</th><th>Dates</th><th class="text-end">Est. Cost</th><th>Status</th><th></th></tr>
+        </thead>
+        <tbody>
+          {% for t in requests %}
+          <tr>
+            <td class="fw-semibold">{{ t.request_no }}</td>
+            <td class="text-truncate" style="max-width:160px">{{ t.purpose }}</td>
+            <td>{{ t.destination_city }}, {{ t.destination_country }}</td>
+            <td class="small text-muted">{{ t.from_date }} &rarr; {{ t.to_date }}</td>
+            <td class="text-end fw-semibold">&#8377;{{ "%.2f"|format(t.estimated_cost or 0) }}</td>
+            <td><span class="badge badge-{{ t.status }}">{{ t.status }}</span></td>
+            <td class="text-end">
+              {% if t.status == 'SUBMITTED' %}
+              <form method="post" action="{{ url_for('travel.cancel', request_id=t.id) }}" onsubmit="return confirm('Cancel this travel request?')">
+                <button class="btn btn-sm btn-outline-danger" title="Cancel"><i class="fa-solid fa-ban"></i></button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7" class="text-center text-muted py-5"><i class="fa-solid fa-inbox fs-3 d-block mb-2"></i>No travel requests yet</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

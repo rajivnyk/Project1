@@ -1,0 +1,44 @@
+﻿{% extends "base.html" %}
+{% block title %}Finance Login{% endblock %}
+{% block content %}
+<div class="row justify-content-center mt-5 auth-hero">
+  <div class="col-12 col-sm-8 col-md-5 col-lg-4">
+    <div class="card portal-card finance shadow">
+      <div class="card-body p-4">
+        <div class="text-center mb-4">
+          <div class="display-4" style="color:#6f42c1"><i class="fa-solid fa-coins"></i></div>
+          <h3 class="fw-bold mt-2">Finance Login</h3>
+          <p class="text-muted small">Verify claims &amp; process reimbursements</p>
+        </div>
+        <form method="post" action="{{ url_for('auth.login') }}?portal=finance" novalidate>
+          <input type="hidden" name="portal" value="finance">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Username or Email</label>
+            <div class="input-group">
+              <span class="input-group-text" style="color:#6f42c1"><i class="fa-solid fa-coins"></i></span>
+              <input type="text" class="form-control" name="username" placeholder="Finance username" required autofocus autocomplete="username">
+            </div>
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-semibold">Password</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="fa-solid fa-lock"></i></span>
+              <input type="password" class="form-control" name="password" placeholder="Enter password" required autocomplete="current-password">
+            </div>
+          </div>
+          <div class="d-grid">
+            <button class="btn btn-lg text-white" style="background:#6f42c1" type="submit"><i class="fa-solid fa-right-to-bracket me-2"></i>Sign In to Finance</button>
+          </div>
+        </form>
+        <hr class="my-3">
+        <div class="text-center small text-muted">
+          Login as:&nbsp;
+          <a href="{{ url_for('auth.login', portal='user') }}" class="text-primary fw-semibold">Employee</a> &middot;
+          <a href="{{ url_for('auth.login', portal='manager') }}" class="text-success fw-semibold">Manager</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

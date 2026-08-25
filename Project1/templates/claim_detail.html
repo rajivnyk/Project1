@@ -1,0 +1,152 @@
+﻿{% extends "base.html" %}
+{% block title %}Claim Details - {{ claim.claim_no }}{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+  <h2><i class="fa-solid fa-file-invoice me-2 text-primary"></i>Claim: {{ claim.claim_no }}</h2>
+  <a href="javascript:history.back()" class="btn btn-outline-secondary"><i class="fa-solid fa-arrow-left me-2"></i>Back</a>
+</div>
+
+{% if claim.status in ['MANAGER_REJECTED', 'FINANCE_REJECTED'] %}
+  {% set rejections = claim.history | selectattr('action', 'equalto', 'REJECTED') | list %}
+  {% if rejections %}
+  <div class="alert alert-danger shadow-sm border-0 border-start border-danger border-4 mb-4">
+    <h6 class="alert-heading fw-bold"><i class="fa-solid fa-circle-exclamation me-2"></i>Claim Rejected</h6>
+    <p class="mb-0">{{ rejections[-1].comments }}</p>
+    <div class="small text-muted mt-1">&mdash; {{ rejections[-1].actor.username }} at {{ rejections[-1].acted_at.strftime('%Y-%m-%d %H:%M') }}</div>
+  </div>
+  {% endif %}
+{% endif %}
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="card shadow-sm mb-4">
+      <div class="card-header bg-white">
+        <h6 class="mb-0 fw-bold">Basic Details</h6>
+      </div>
+      <div class="card-body">
+        <div class="row mb-3">
+          <div class="col-sm-3 text-muted fw-semibold small">Title</div>
+          <div class="col-sm-9">{{ claim.title }}</div>
+        </div>
+        <div class="row mb-3">
+          <div class="col-sm-3 text-muted fw-semibold small">Date</div>
+          <div class="col-sm-9">{{ claim.claim_date }}</div>
+        </div>
+        <div class="row mb-3">
+          <div class="col-sm-3 text-muted fw-semibold small">Period</div>
+          <div class="col-sm-9">{{ claim.period_from }} to {{ claim.period_to }}</div>
+        </div>
+        <div class="row mb-3">
+          <div class="col-sm-3 text-muted fw-semibold small">Status</div>
+          <div class="col-sm-9"><span class="badge badge-{{ claim.status }}">{{ claim.status.replace('_', ' ') }}</span></div>
+        </div>
+        <div class="row mb-3">
+          <div class="col-sm-3 text-muted fw-semibold small">Total Amount</div>
+          <div class="col-sm-9 fw-bold fs-5 text-primary">&#8377;{{ "%.2f"|format(claim.total_amount or 0) }}</div>
+        </div>
+        {% if claim.travel_request_id %}
+        <div class="row mb-3">
+          <div class="col-sm-3 text-muted fw-semibold small">Linked Trip</div>
+          <div class="col-sm-9">{{ claim.travel_request.request_no }} ({{ claim.travel_request.destination_city }})</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-bold">Expense Items</h6>
+      </div>
+
+      <div class="card-body p-0">
+        {% set can_approve = (g.user.role in ['MANAGER', 'ADMIN'] and claim.status == 'SUBMITTED') or (g.user.role == 'FINANCE' and claim.status == 'MANAGER_APPROVED') %}
+        {% if can_approve %}
+        <form method="post" action="{% if claim.status == 'SUBMITTED' %}{{ url_for('manager.decide_claim', claim_id=claim.id) }}{% else %}{{ url_for('finance.verify', claim_id=claim.id) }}{% endif %}">
+        {% endif %}
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Date</th>
+                <th>Category</th>
+                <th>Description</th>
+                <th class="text-end">Amount</th>
+                <th>Violation</th>
+                {% if can_approve %}
+                <th style="width:120px">Apprv. Amt</th>
+                <th>Comments</th>
+                {% endif %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in claim.items %}
+              <tr>
+                <td class="small">{{ item.expense_date }}</td>
+                <td>{{ item.category.name }}</td>
+                <td>{{ item.description }}</td>
+                <td class="text-end fw-semibold">&#8377;{{ "%.2f"|format(item.amount_in_base) }}</td>
+                <td>
+                  {% if item.policy_violation %}
+                  <span class="badge bg-danger" title="{{ item.violation_reason }}"><i class="fa-solid fa-triangle-exclamation"></i> Yes</span>
+                  <div class="small text-danger mt-1">{{ item.violation_reason }}</div>
+                  {% else %}
+                  <span class="badge bg-success">No</span>
+                  {% endif %}
+                </td>
+                {% if can_approve %}
+                <td>
+                  <input type="number" step="0.01" class="form-control form-control-sm" name="approved_amount_{{ item.id }}" value="{{ item.approved_amount or item.amount_in_base }}" max="{{ item.amount_in_base }}">
+                </td>
+                <td>
+                  <input type="text" class="form-control form-control-sm" name="comment_{{ item.id }}" value="{{ item.reviewer_comments or '' }}" placeholder="Reason if reduced">
+                </td>
+                {% endif %}
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="7" class="text-center text-muted py-4">No items added yet.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% if can_approve %}
+        <div class="p-3 bg-light border-top text-end">
+           <input type="text" name="comments" class="form-control d-inline-block w-auto me-2" placeholder="Overall decision comments...">
+           <button type="submit" name="decision" value="approve" class="btn btn-success"><i class="fa-solid fa-check me-1"></i>Approve Claim</button>
+           <button type="submit" name="decision" value="reject" class="btn btn-danger"><i class="fa-solid fa-xmark me-1"></i>Reject Claim</button>
+        </div>
+        </form>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card shadow-sm mb-4">
+      <div class="card-header bg-white">
+        <h6 class="mb-0 fw-bold">Approval History</h6>
+      </div>
+      <div class="card-body p-0">
+        <ul class="list-group list-group-flush">
+          {% for h in claim.history %}
+          <li class="list-group-item py-3">
+            <div class="d-flex w-100 justify-content-between mb-1">
+              <h6 class="mb-0 fw-semibold">{{ h.actor.username }}</h6>
+              <small class="text-muted">{{ h.acted_at.strftime('%Y-%m-%d %H:%M') }}</small>
+            </div>
+            <p class="mb-1 small">
+              <span class="badge badge-{{ h.action }} me-1">{{ h.action }}</span>
+              {{ h.comments or 'No comments' }}
+            </p>
+          </li>
+          {% else %}
+          <li class="list-group-item text-muted text-center py-4">No history available</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

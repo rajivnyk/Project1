@@ -2,9 +2,9 @@
 from config.database import db
 from models.enums import Role
 
+
 class User(db.Model):
     __tablename__ = "users"
-
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     username = db.Column(db.String(50), unique=True, nullable=False, index=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
@@ -14,10 +14,13 @@ class User(db.Model):
     failed_attempts = db.Column(db.Integer, default=0, nullable=False)
     last_login_at = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
     employee = db.relationship("Employee", back_populates="user", uselist=False)
 
     def to_dict(self):
-        return {"id": self.id, "username": self.username,
-                "email": self.email,
-                "role": self.role, "is_active": self.is_active}
+        return {
+            "id": self.id,
+            "username": self.username,
+            "email": self.email,
+            "role": self.role,
+            "is_active": self.is_active,
+        }

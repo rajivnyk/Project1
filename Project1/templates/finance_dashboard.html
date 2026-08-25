@@ -1,0 +1,134 @@
+﻿{% extends "base.html" %}
+{% block title %}Finance Dashboard{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h2><i class="fa-solid fa-coins me-2" style="color:#6f42c1"></i>Finance Dashboard</h2>
+</div>
+<!-- Pending Verification -->
+<div class="card shadow-sm mb-4">
+  <div class="card-header bg-white">
+    <h6 class="mb-0 fw-bold"><i class="fa-solid fa-magnifying-glass-dollar me-2 text-warning"></i>Awaiting Verification
+      {% if pending %}<span class="badge bg-warning text-dark ms-2">{{ pending|length }}</span>{% endif %}
+    </h6>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr><th>Claim No</th><th>Employee</th><th>Title</th><th class="text-end">Amount</th><th>Decision</th></tr>
+        </thead>
+        <tbody>
+          {% for c in pending %}
+          <tr>
+            <td><a href="{{ url_for('expense.detail', claim_id=c.id) }}" class="text-decoration-none fw-semibold">{{ c.claim_no }}</a></td>
+            <td>{{ c.employee.full_name }}</td>
+            <td class="text-truncate" style="max-width:160px">{{ c.title }}</td>
+            <td class="text-end fw-semibold">&#8377;{{ "%.2f"|format(c.total_amount or 0) }}</td>
+            <td>
+              <form method="post" action="{{ url_for('finance.verify', claim_id=c.id) }}" class="d-flex gap-2 align-items-center">
+                <input type="text" class="form-control form-control-sm" name="comments" placeholder="Comments..." style="min-width:120px">
+                <button class="btn btn-sm btn-success" name="decision" value="approve" title="Verify"><i class="fa-solid fa-check"></i></button>
+                <button class="btn btn-sm btn-danger" name="decision" value="reject" title="Reject"><i class="fa-solid fa-xmark"></i></button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5" class="text-center text-muted py-4"><i class="fa-solid fa-circle-check text-success me-2"></i>All caught up!</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<!-- Ready for Payment -->
+<div class="card shadow-sm mb-4">
+  <div class="card-header bg-white">
+    <h6 class="mb-0 fw-bold"><i class="fa-solid fa-money-bill-wave me-2 text-success"></i>Ready for Payment
+      {% if ready %}<span class="badge bg-success ms-2">{{ ready|length }}</span>{% endif %}
+    </h6>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr><th>Claim No</th><th>Employee</th><th class="text-end">Amount</th><th>Action</th></tr>
+        </thead>
+        <tbody>
+          {% for c in ready %}
+          <tr>
+            <td><a href="{{ url_for('expense.detail', claim_id=c.id) }}" class="text-decoration-none fw-semibold">{{ c.claim_no }}</a></td>
+            <td>{{ c.employee.full_name }}</td>
+            <td class="text-end fw-semibold text-success">&#8377;{{ "%.2f"|format(c.total_amount or 0) }}</td>
+            <td>
+  <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#reimburseModal{{ c.id }}">
+    <i class="fa-solid fa-paper-plane me-1"></i>Reimburse
+  </button>
+</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="text-center text-muted py-4">No claims ready for payment</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<!-- Search -->
+<div class="d-flex justify-content-end">
+  <a href="{{ url_for('finance.search') }}" class="btn btn-outline-primary"><i class="fa-solid fa-magnifying-glass me-2"></i>Search All Claims</a>
+</div>
+
+{% for c in ready %}
+<!-- Reimburse Modal for Claim {{ c.id }} -->
+<div class="modal fade" id="reimburseModal{{ c.id }}" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('finance.reimburse', claim_id=c.id) }}">
+        <div class="modal-header">
+          <h5 class="modal-title">Process Reimbursement</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p><strong>Claim No:</strong> {{ c.claim_no }}</p>
+          <p><strong>Total Approved Amount:</strong> &#8377;{{ "%.2f"|format(c.total_amount or 0) }}</p>
+          {% set advance = c.travel_request.advance_required if c.travel_request and c.travel_request.advance_required else 0 %}
+          {% if advance > 0 %}
+          <div class="alert alert-warning py-2 mb-3">
+            <i class="fa-solid fa-circle-exclamation me-1"></i>
+            This employee received a travel advance of <strong>&#8377;{{ "%.2f"|format(advance) }}</strong>. This will be automatically deducted.
+          </div>
+          {% endif %}
+          
+          <div class="mb-3">
+            <label class="form-label">Additional Manual Deduction (if any)</label>
+            <input type="number" step="0.01" class="form-control" name="deducted_amount" value="0.00" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Deduction Reason</label>
+            <input type="text" class="form-control" name="deduction_reason" placeholder="e.g. Lost receipt penalty">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Payment Mode</label>
+            <select class="form-select" name="payment_mode" required>
+              <option value="NEFT">NEFT</option>
+              <option value="IMPS">IMPS</option>
+              <option value="CHEQUE">Cheque</option>
+              <option value="CASH">Cash</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Transaction Reference No.</label>
+            <input type="text" class="form-control" name="transaction_ref" required placeholder="e.g. TXN123456789">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success"><i class="fa-solid fa-paper-plane me-1"></i>Process Payment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+{% endblock %}

@@ -1,14 +1,36 @@
 {% extends "base.html" %}
+{% block title %}Sign In{% endblock %}
 {% block content %}
-<div class="card narrow">
-    <h2>Sign in</h2>
-    <form method="post" action="{{ url_for('auth.login') }}" novalidate>
-        <label>Username or email</label>
-        <input type="text" name="username" required autofocus>
-        <label>Password</label>
-        <input type="password" name="password" required>
-        <button class="btn primary" type="submit">Login</button>
-    </form>
-    <p class="muted">New here? <a href="{{ url_for('auth.register') }}">Register</a></p>
+{#
+  NOTE: This generic template is not currently linked from any route.
+  auth.login always renders a portal-specific template instead
+  (login_user.html / login_manager.html / login_finance.html) based on
+  the ?portal= query parameter, defaulting to login_user.html. Kept here,
+  Bootstrap-styled, in case a portal-agnostic login page is wired up later.
+#}
+<div class="row justify-content-center mt-5">
+  <div class="col-12 col-sm-8 col-md-5 col-lg-4">
+    <div class="card shadow">
+      <div class="card-body p-4">
+        <div class="text-center mb-4">
+          <div class="display-4 text-primary"><i class="fa-solid fa-right-to-bracket"></i></div>
+          <h3 class="fw-bold mt-2">Sign In</h3>
+        </div>
+        <form method="post" action="{{ url_for('auth.login') }}" novalidate>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Username or Email</label>
+            <input type="text" class="form-control" name="username" required autofocus>
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-semibold">Password</label>
+            <input type="password" class="form-control" name="password" required>
+          </div>
+          <div class="d-grid">
+            <button class="btn btn-primary btn-lg" type="submit"><i class="fa-solid fa-right-to-bracket me-2"></i>Login</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}

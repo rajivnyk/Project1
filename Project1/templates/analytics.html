@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+{% block title %}Analytics{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h2><i class="fa-solid fa-chart-line me-2 text-primary"></i>Analytics</h2>
+  <p class="text-muted mb-0">
+    {% if role in ('FINANCE', 'ADMIN') %}Company-wide spend, approvals, and policy insights
+    {% elif role == 'MANAGER' %}Your team's spend, approvals, and policy insights
+    {% else %}Your personal spending insights{% endif %}
+  </p>
+</div>
+
+<!-- KPI cards -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="card stat-card primary h-100">
+      <div class="card-body">
+        <p class="text-muted small mb-1">Total Spend Tracked</p>
+        <h3 class="fw-bold mb-0 skeleton" id="kpi-total">Loading</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card stat-card warning h-100">
+      <div class="card-body">
+        <p class="text-muted small mb-1">Avg. Manager Decision</p>
+        <h3 class="fw-bold mb-0 skeleton" id="kpi-mgr-turnaround">Loading</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card stat-card info h-100">
+      <div class="card-body">
+        <p class="text-muted small mb-1">Avg. Finance Decision</p>
+        <h3 class="fw-bold mb-0 skeleton" id="kpi-fin-turnaround">Loading</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card stat-card danger h-100">
+      <div class="card-body">
+        <p class="text-muted small mb-1">Policy Violations</p>
+        <h3 class="fw-bold mb-0 skeleton" id="kpi-violations">Loading</h3>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-lg-5">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white"><h6 class="mb-0 fw-bold"><i class="fa-solid fa-chart-pie me-2 text-primary"></i>Spend by Category</h6></div>
+      <div class="card-body"><canvas id="chartCategory" height="240"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white"><h6 class="mb-0 fw-bold"><i class="fa-solid fa-chart-column me-2 text-primary"></i>Monthly Trend</h6></div>
+      <div class="card-body"><canvas id="chartTrend" height="240"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-lg-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white"><h6 class="mb-0 fw-bold"><i class="fa-solid fa-gauge-high me-2 text-success"></i>My Budget Utilization This Month</h6></div>
+      <div class="card-body" id="budgetBody">
+        <div class="skeleton mb-2" style="height:14px;width:70%">Loading</div>
+        <div class="skeleton mb-2" style="height:8px">Loading</div>
+        <div class="skeleton mb-2" style="height:14px;width:55%">Loading</div>
+        <div class="skeleton" style="height:8px">Loading</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white"><h6 class="mb-0 fw-bold"><i class="fa-solid fa-triangle-exclamation me-2 text-warning"></i>Overdue Approvals (SLA &gt; 48h)</h6></div>
+      <div class="card-body p-0" id="overdueBody">
+        <div class="p-3">
+          <div class="skeleton mb-2" style="height:16px">Loading</div>
+          <div class="skeleton" style="height:16px;width:80%">Loading</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if role in ('FINANCE', 'ADMIN') %}
+<div class="card shadow-sm mb-4">
+  <div class="card-header bg-white"><h6 class="mb-0 fw-bold"><i class="fa-solid fa-ranking-star me-2 text-purple" style="color:#6f42c1"></i>Top Spenders (Company-wide)</h6></div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light"><tr><th>Employee</th><th>Department</th><th class="text-end">Claims</th><th class="text-end">Total Spend</th></tr></thead>
+        <tbody id="topSpendersBody"><tr><td colspan="4" class="text-center text-muted py-3">Loading&hellip;</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+const userRole = "{{ role }}";
+const rupee = n => '₹' + Number(n || 0).toLocaleString('en-IN', {maximumFractionDigits: 0});
+
+async function getJSON(url) {
+  const res = await fetch(url, {credentials: 'same-origin'});
+  if (!res.ok) return [];
+  return res.json();
+}
+
+(async function init() {
+  // Removes the shimmer placeholder and fills in the real value, animated.
+  function fillKpi(id, text) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove('skeleton');
+    el.textContent = text;
+    // Assuming animateCount is defined elsewhere or we just skip it if undefined
+    if (typeof animateCount === 'function') animateCount(el);
+  }
+
+  // ---- category + total ----
+  const cats = await getJSON("{{ url_for('analytics_api.spend_by_category') }}");
+  const total = cats.reduce((s, c) => s + c.amount, 0);
+  fillKpi('kpi-total', rupee(total));
+  new Chart(document.getElementById('chartCategory'), {
+    type: 'doughnut',
+    data: {
+      labels: cats.map(c => c.category),
+      datasets: [{ data: cats.map(c => c.amount),
+        backgroundColor: ['#0d6efd','#198754','#ffc107','#6f42c1','#0dcaf0','#dc3545','#fd7e14','#20c997'] }]
+    },
+    options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } } }
+  });
+
+  // ---- trend ----
+  const trend = await getJSON("{{ url_for('analytics_api.monthly_trend') }}");
+  new Chart(document.getElementById('chartTrend'), {
+    type: 'bar',
+    data: {
+      labels: trend.map(t => t.month),
+      datasets: [{ label: 'Claimed amount', data: trend.map(t => t.amount), backgroundColor: '#0d6efd' }]
+    },
+    options: { scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } }
+  });
+
+  // ---- turnaround ----
+  const ta = await getJSON("{{ url_for('analytics_api.turnaround') }}");
+  fillKpi('kpi-mgr-turnaround', ta.avg_manager_decision_hours != null ? ta.avg_manager_decision_hours + 'h' : 'N/A');
+  fillKpi('kpi-fin-turnaround', ta.avg_finance_decision_hours != null ? ta.avg_finance_decision_hours + 'h' : 'N/A');
+
+  // ---- violations ----
+  const viol = await getJSON("{{ url_for('analytics_api.policy_violations') }}");
+  fillKpi('kpi-violations', String(viol.reduce((s, v) => s + v.violations, 0)));
+
+  // ---- budget utilization ----
+  const budget = await getJSON("{{ url_for('analytics_api.budget_utilization') }}");
+  const budgetBody = document.getElementById('budgetBody');
+  if (!budget.length) {
+    budgetBody.innerHTML = '<p class="text-muted small mb-0">No policy rules configured for your grade yet.</p>';
+  } else {
+    budgetBody.innerHTML = budget.map(b => {
+      const pct = Math.min(b.pct_of_claim_limit, 100);
+      const barClass = b.pct_of_claim_limit >= 100 ? 'bg-danger' : b.pct_of_claim_limit >= 75 ? 'bg-warning' : 'bg-success';
+      return `<div class="mb-3">
+        <div class="d-flex justify-content-between small mb-1">
+          <span class="fw-semibold">${b.category}</span>
+          <span class="text-muted">${rupee(b.spent_this_month)} / ${rupee(b.claim_limit)} (${b.pct_of_claim_limit}%)</span>
+        </div>
+        <div class="progress" style="height:8px"><div class="progress-bar ${barClass}" style="width:${pct}%"></div></div>
+      </div>`;
+    }).join('');
+  }
+
+  // ---- overdue approvals ----
+  if (userRole !== 'EMPLOYEE') {
+    const overdue = await getJSON("{{ url_for('analytics_api.overdue') }}");
+    const overdueBody = document.getElementById('overdueBody');
+    if (!overdue.length) {
+      overdueBody.innerHTML = '<p class="text-muted small m-3 mb-0"><i class="fa-solid fa-circle-check text-success me-1"></i>Nothing overdue.</p>';
+    } else {
+      overdueBody.innerHTML = `<div class="table-responsive"><table class="table table-sm mb-0">
+        <thead class="table-light"><tr><th>Claim</th><th>Employee</th><th>Stage</th><th class="text-end">Hours Pending</th></tr></thead>
+        <tbody>${overdue.map(o => `<tr>
+          <td><a href="/expense/${o.claim_id}">${o.claim_no}</a></td>
+          <td>${o.employee}</td><td>${o.stage}</td>
+          <td class="text-end text-danger fw-semibold">${o.hours_pending}</td></tr>`).join('')}
+        </tbody></table></div>`;
+    }
+  } else {
+    const overdueBody = document.getElementById('overdueBody');
+    if (overdueBody) {
+      overdueBody.innerHTML = '<p class="text-muted small m-3 mb-0">Only visible to managers and finance.</p>';
+    }
+  }
+
+  // ---- top spenders ----
+  if (userRole === 'FINANCE' || userRole === 'ADMIN') {
+    const top = await getJSON("{{ url_for('analytics_api.top_spenders') }}");
+    const topSpendersBody = document.getElementById('topSpendersBody');
+    if (topSpendersBody) {
+      topSpendersBody.innerHTML = top.length
+        ? top.map(t => `<tr><td class="fw-semibold">${t.employee}</td><td>${t.department}</td>
+            <td class="text-end">${t.claims}</td><td class="text-end fw-semibold">${rupee(t.amount)}</td></tr>`).join('')
+        : '<tr><td colspan="4" class="text-center text-muted py-3">No data yet</td></tr>';
+    }
+  }
+})();
+</script>
+{% endblock %}
+{% endblock %}

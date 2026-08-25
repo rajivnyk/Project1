@@ -1,0 +1,84 @@
+﻿{% extends "base.html" %}
+{% block title %}Add Employee{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="page-header">
+      <h2><i class="fa-solid fa-user-plus me-2 text-success"></i>Add New Employee</h2>
+      <p class="text-muted mb-0">Fill in the details to create a new employee account</p>
+    </div>
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <form method="post" action="{{ url_for('auth.manager_register') }}" novalidate>
+          <div class="form-section-header">Account Details</div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Username <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="username" required autofocus placeholder="e.g. john.doe">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Full Name <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="full_name" required placeholder="e.g. John Doe">
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">Email <span class="text-danger">*</span></label>
+              <input type="email" class="form-control" name="email" required placeholder="employee@company.com">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Password <span class="text-danger">*</span></label>
+              <input type="password" class="form-control" name="password" required minlength="8" placeholder="Min 8 characters">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Confirm Password <span class="text-danger">*</span></label>
+              <input type="password" class="form-control" name="confirm_password" required placeholder="Repeat password">
+            </div>
+          </div>
+
+          <div class="form-section-header mt-4">Employment Details</div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Department <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="department" required placeholder="e.g. Engineering">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Designation</label>
+              <input type="text" class="form-control" name="designation" placeholder="e.g. Software Engineer">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Grade</label>
+              <select class="form-select" name="grade">
+                <option value="G1">G1 - Junior</option>
+                <option value="G2">G2</option>
+                <option value="G3" selected>G3 - Standard</option>
+                <option value="G4">G4</option>
+                <option value="G5">G5 - Senior</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Contact Number</label>
+              <input type="text" class="form-control" name="contact_number" placeholder="+91 XXXXX XXXXX">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Reporting Manager</label>
+              <select class="form-select" name="manager_id">
+                <option value="">-- None --</option>
+                {% for m in managers %}
+                  {% if m.user and m.user.role in ['MANAGER','ADMIN'] %}
+                  <option value="{{ m.id }}">{{ m.full_name }} ({{ m.emp_code }})</option>
+                  {% endif %}
+                {% endfor %}
+              </select>
+              <div class="form-text">Only manager accounts shown</div>
+            </div>
+          </div>
+
+          <div class="d-flex gap-3 mt-4">
+            <button type="submit" class="btn btn-success"><i class="fa-solid fa-user-plus me-2"></i>Create Employee</button>
+            <a href="{{ url_for('manager.dashboard') }}" class="btn btn-outline-secondary"><i class="fa-solid fa-xmark me-2"></i>Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

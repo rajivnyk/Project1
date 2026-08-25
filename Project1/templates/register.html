@@ -1,69 +1,29 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
+{% block title %}Register{% endblock %}
 {% block content %}
-<div class="card narrow">
-    <h2>Create an Account</h2>
-    <form method="post" action="{{ url_for('auth.register') }}" novalidate>
-
-        <div class="form-row">
-            <div>
-                <label>Username *</label>
-                <input type="text" name="username" required autofocus>
-            </div>
-            <div>
-                <label>Full Name *</label>
-                <input type="text" name="full_name" required>
-            </div>
-        </div>
-
-        <label>Email *</label>
-        <input type="email" name="email" required>
-
-        <div class="form-row">
-            <div>
-                <label>Password *</label>
-                <input type="password" name="password" required minlength="8">
-            </div>
-            <div>
-                <label>Confirm Password *</label>
-                <input type="password" name="confirm_password" required>
-            </div>
-        </div>
-
-        <div class="form-row">
-            <div>
-                <label>Department</label>
-                <input type="text" name="department" placeholder="e.g. Engineering">
-            </div>
-            <div>
-                <label>Designation</label>
-                <input type="text" name="designation" placeholder="e.g. Software Engineer">
-            </div>
-        </div>
-
-        <label>Grade</label>
-        <select name="grade">
-            <option value="G1">G1</option>
-            <option value="G2">G2</option>
-            <option value="G3" selected>G3</option>
-            <option value="G4">G4</option>
-            <option value="G5">G5</option>
-        </select>
-
-        {% if managers %}
-        <label>Reporting Manager</label>
-        <select name="manager_id">
-            <option value="">-- None --</option>
-            {% for m in managers %}
-            <option value="{{ m.id }}">{{ m.full_name }} ({{ m.emp_code }})</option>
-            {% endfor %}
-        </select>
-        {% endif %}
-
-        <label>Contact Number</label>
-        <input type="text" name="contact_number" placeholder="+91 XXXXX XXXXX">
-
-        <button class="btn primary" type="submit">Register</button>
-    </form>
-    <p class="muted">Already have an account? <a href="{{ url_for('auth.login_page') }}">Sign in</a></p>
+{#
+  NOTE: Not currently linked from any route. By design, this system does not
+  support employee self-registration -- accounts are created by a Manager
+  (via auth.manager_register) or an Admin (via admin.create_user), so that a
+  reporting manager can always be assigned at creation time. Kept here,
+  Bootstrap-styled and with the previously-broken auth.register form action
+  fixed to point at the real manager-registration flow, in case this is
+  reused later for an admin-invite flow.
+#}
+<div class="row justify-content-center mt-5">
+  <div class="col-lg-6">
+    <div class="card shadow-sm">
+      <div class="card-body p-4 text-center">
+        <div class="display-4 text-primary mb-2"><i class="fa-solid fa-user-plus"></i></div>
+        <h3 class="fw-bold">Self-registration isn't available</h3>
+        <p class="text-muted">
+          Employee accounts are created by a Manager or Admin so a reporting manager
+          can be assigned right away. If you need an account, ask your manager to
+          add you from the Manager Portal.
+        </p>
+        <a href="{{ url_for('auth.login_page') }}" class="btn btn-primary"><i class="fa-solid fa-right-to-bracket me-2"></i>Back to Sign In</a>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}

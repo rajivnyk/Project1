@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}New Expense Claim{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="page-header">
+      <h2><i class="fa-solid fa-file-invoice-dollar me-2 text-primary"></i>New Expense Claim</h2>
+    </div>
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <form method="post" action="{{ url_for('expense.new_claim') }}" novalidate>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Title <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" name="title" required placeholder="e.g. Client visit to Mumbai">
+          </div>
+          
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Period From</label>
+              <input type="date" class="form-control" name="period_from">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Period To</label>
+              <input type="date" class="form-control" name="period_to">
+            </div>
+          </div>
+          
+          <div class="mb-4">
+            <label class="form-label fw-semibold">Linked Travel Request (Optional)</label>
+            <select class="form-select" name="travel_request_id">
+              <option value="">-- None --</option>
+              {% for t in trips %}
+              <option value="{{ t.id }}">{{ t.request_no }} - {{ t.destination_city }} ({{ t.status }})</option>
+              {% endfor %}
+            </select>
+            <div class="form-text">Select an approved travel request to link these expenses.</div>
+          </div>
+          
+          <div class="d-flex gap-3">
+            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-save me-2"></i>Create Claim</button>
+            <a href="{{ url_for('expense.my_claims') }}" class="btn btn-outline-secondary">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
