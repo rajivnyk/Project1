@@ -1,4 +1,4 @@
-﻿import os
+import os
 import logging
 from logging.handlers import RotatingFileHandler
 from flask import Flask, g, render_template, redirect, url_for
@@ -83,6 +83,11 @@ def root():
     return redirect(url_for("auth.login_page"))
 
 
+@app.route("/health")
+def health_check():
+    return "OK", 200
+
+
 from jinja2 import StrictUndefined
 
 app.jinja_env.undefined = StrictUndefined
@@ -90,4 +95,4 @@ if __name__ == "__main__":
     with app.app_context():
         db.create_all()
         print("Tables:", ", ".join(sorted(db.metadata.tables)))
-    app.run(debug=os.getenv("FLASK_DEBUG") == "1", host="127.0.0.1", port=5000)
+    app.run(debug=os.getenv("FLASK_DEBUG") == "1", host="0.0.0.0", port=3000)

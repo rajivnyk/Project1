@@ -6,27 +6,19 @@ pipeline {
                 checkout scm
             }
         }
-        stage('Install Dependencies') {
-            steps {
-                dir('Project1') {
-                    sh 'pip install -r requirements.txt'
-                }
-            }
-        }
-        stage('Test') {
-            steps {
-                dir('Project1') {
-                    sh 'pytest'
-                }
-            }
-        }
         stage('Build Docker Image') {
             steps {
                 dir('Project1') {
                     sh 'docker build -t rajiv69/flask-app:latest .'
                 }
             }
-        }  
+        }
+        stage('Test') {
+            steps {
+                // Run pytest inside the built Docker image
+                sh 'docker run --rm rajiv69/flask-app:latest pytest'
+            }
+        }
         stage('Push to Docker Hub') {
             steps {
                 withCredentials([

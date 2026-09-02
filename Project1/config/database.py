@@ -8,14 +8,18 @@ db = SQLAlchemy()
 
 
 def init_db(app):
-    user = os.getenv("DB_USER", "root")
-    password = quote_plus(os.getenv("DB_PASSWORD", ""))
-    host = os.getenv("DB_HOST", "localhost")
-    port = os.getenv("DB_PORT", "3306")
-    name = os.getenv("DB_NAME", "travel_2")
-    app.config["SQLALCHEMY_DATABASE_URI"] = (
-        f"mysql+pymysql://{user}:{password}@{host}:{port}/{name}?charset=utf8mb4"
-    )
+    db_url = os.getenv("MYSQL_DB_URL")
+    if db_url:
+        app.config["SQLALCHEMY_DATABASE_URI"] = db_url
+    else:
+        user = os.getenv("DB_USER", "root")
+        password = quote_plus(os.getenv("DB_PASSWORD", ""))
+        host = os.getenv("DB_HOST", "localhost")
+        port = os.getenv("DB_PORT", "3306")
+        name = os.getenv("DB_NAME", "travel_2")
+        app.config["SQLALCHEMY_DATABASE_URI"] = (
+            f"mysql+pymysql://{user}:{password}@{host}:{port}/{name}?charset=utf8mb4"
+        )
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
         "pool_pre_ping": True,
