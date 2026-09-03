@@ -11,8 +11,37 @@ pipeline {
         }
         stage('Test') {
             steps {
-                // Run pytest inside the built Docker image
-                sh 'docker run --rm rajiv69/flask-app:latest pytest'
+                dir('Project1') {
+                    sh '''#!/bin/bash
+                        set +e
+                        docker network create test-net
+                        
+                        # Start a temporary MySQL database for testing
+                        docker run -d --name test-mysql --network test-net \\
+                          -e MYSQL_ROOT_PASSWORD=mysql@rajiv \\
+                          -e MYSQL_DATABASE=travel_test \\
+                          mysql:8.4
+                          
+                        echo "Waiting for MySQL to start..."
+                        sleep 20
+                        
+                        # Run pytest inside the app container, connecting to the test DB
+                        docker run --rm --network test-net \\
+                          -e DB_HOST=test-mysql \\
+                          -e DB_PASSWORD=mysql@rajiv \\
+                          -e DB_USER=root \\
+                          -e DB_NAME=travel_test \\
+                          rajiv69/flask-app:latest pytest
+                          
+                        TEST_EXIT_CODE=$?
+                        
+                        # Cleanup
+                        docker rm -f test-mysql
+                        docker network rm test-net
+                        
+                        exit $TEST_EXIT_CODE
+                    '''
+                }
             }
         }
         stage('Push to Docker Hub') {
