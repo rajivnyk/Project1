@@ -1,4 +1,4 @@
-﻿import os
+import os
 
 os.environ["DB_NAME"] = "travel_test"
 os.environ["FLASK_DEBUG"] = "0"
@@ -46,6 +46,8 @@ def test_db(test_app):
         db.session.commit()
         db.session.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
         yield db
+        db.session.rollback()
+        db.session.remove()
 
 
 @pytest.fixture
