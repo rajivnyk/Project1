@@ -14,6 +14,11 @@ pipeline {
                 dir('Project1') {
                     sh '''#!/bin/bash
                         set +e
+                        
+                        # Cleanup any stuck containers from previous aborted builds
+                        docker rm -f test-mysql || true
+                        docker network rm test-net || true
+                        
                         docker network create test-net
                         
                         # Start a temporary MySQL database for testing
@@ -22,8 +27,8 @@ pipeline {
                           -e MYSQL_DATABASE=travel_test \\
                           mysql:8.4
                           
-                        echo "Waiting for MySQL to start..."
-                        sleep 20
+                        echo "Waiting for MySQL to fully initialize..."
+                        sleep 35
                         
                         # Run pytest inside the app container, connecting to the test DB
                         docker run --rm --network test-net \\
