@@ -1,0 +1,35 @@
+pipeline {
+    agent any
+    stages {
+
+        stage('Build Docker Image') {
+            steps {
+                dir('Project1') {
+                    sh 'docker build -t rajiv69/flask-app:latest .'
+                }
+            }
+        }
+        stage('Test') {
+            steps {
+                // Run pytest inside the built Docker image
+                sh 'docker run --rm rajiv69/flask-app:latest pytest'
+            }
+        }
+        stage('Push to Docker Hub') {
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub-cred',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )
+                ]) {
+                    sh '''
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        docker push rajiv69/flask-app:latest
+                    '''
+                }
+            }
+        }
+    }
+}
