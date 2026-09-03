@@ -28,7 +28,7 @@ class PolicyService:
             violations.append(
                 {
                     "code": "OVER_CLAIM_LIMIT",
-                    "severity": "MEDIUM",
+                    "severity": "HIGH",
                     "message": f"{category.name}: Rs.{amount} exceeds the per-claim limit of Rs.{policy.max_amount_per_claim} for grade {grade}",
                 }
             )
